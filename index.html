@@ -305,7 +305,7 @@ async function loadWeather(){
   const q=new URLSearchParams({
     latitude:TRAMOS.map(t=>t.lat.toFixed(3)).join(","),
     longitude:TRAMOS.map(t=>t.lon.toFixed(3)).join(","),
-    hourly:"temperature_2m,wind_speed_10m,wind_direction_10m,uv_index,cloud_cover,precipitation",
+    hourly:"temperature_2m,wind_speed_10m,wind_direction_10m,uv_index,cloud_cover,precipitation,precipitation_probability",
     timezone:"America/Montevideo",past_days:"2",forecast_days:"2",wind_speed_unit:"kmh"
   });
   try{
@@ -326,8 +326,14 @@ function wxAtSlot(t){
   for(let k=Math.max(0,i-23);k<=i;k++){const s=h.wind_speed_10m[k]||0,d=h.wind_direction_10m[k]||0;u+=s*Math.sin(rad(d));v+=s*Math.cos(rad(d));n++}
   for(let k=Math.max(0,i-47);k<=i;k++)rain+=h.precipitation[k]||0;
   u/=n;v/=n;
+  // lluvia cerca de esa hora: una hora antes y dos después
+  const pp=h.precipitation_probability||[];
+  let rainNear=0,probNear=0,rainBefore=0;
+  for(let k=Math.max(0,i-1);k<=Math.min(h.time.length-1,i+2);k++){rainNear+=h.precipitation[k]||0;probNear=Math.max(probNear,pp[k]||0)}
+  for(let k=Math.max(0,i-47);k<i-1;k++)rainBefore+=h.precipitation[k]||0;
   return {temp:h.temperature_2m[i],wind:Math.round(h.wind_speed_10m[i]),dir:h.wind_direction_10m[i],uv:Math.round(h.uv_index[i]??0),
-    cloud:Math.round(h.cloud_cover[i]),pr:h.precipitation[i]||0,avgDir:(deg(Math.atan2(u,v))+360)%360,avgSpeed:Math.hypot(u,v),rain};
+    cloud:Math.round(h.cloud_cover[i]),pr:h.precipitation[i]||0,prob:Math.round(pp[i]||0),rainNear,probNear:Math.round(probNear),rainBefore,
+    avgDir:(deg(Math.atan2(u,v))+360)%360,avgSpeed:Math.hypot(u,v),rain};
 }
 
 // ===== Agua estimada =====
@@ -418,7 +424,10 @@ function cond(t){
   if(w.temp<18)minus(3,`fresco (${tc}°)`);else if(w.temp<21)minus(1.5,`templado (${tc}°)`);
   if(w.wind>35)minus(4,`mucho viento (${w.wind} km/h)`);else if(w.wind>25)minus(2.5,`bastante viento (${w.wind} km/h)`);else if(w.wind>15)minus(1,`algo de viento (${w.wind} km/h)`);
   if(w.cloud>80)minus(2,`nublado (${w.cloud}%)`);else if(w.cloud>50)minus(1,`parcialmente nublado (${w.cloud}%)`);
-  if(w.pr>=.3)minus(3,"lluvia");
+  if(w.pr>=.3)minus(3,"lluvia a esa hora");
+  else if(w.rainNear>=.5)minus(1.5,"lluvia cerca de esa hora");
+  else if(w.probNear>=60)minus(1,`probable lluvia (${w.probNear}%)`);
+  else if(w.probNear>=40)minus(.5,`chance de lluvia (${w.probNear}%)`);
   if(wa.clar==="Turbia")minus(2,"agua turbia");else if(wa.clar==="Regular")minus(1,"agua algo revuelta");
   if(wa.label==="Marrón")minus(.5,"agua marrón");
   if(cr.jellyLevel==="Muchas")minus(cr.jelly.top==="Muchas"?3:2,"aguavivas");else if(cr.jellyLevel==="Pocas")minus(1,"algunas aguavivas");
@@ -480,13 +489,15 @@ function renderCard(t,c){
       <div class="metric"><span class="lbl">Agua</span>
         <span class="big"><span class="swatch" style="background:${c.w.color}"></span>${c.w.label}</span>
         <span class="note">${c.w.clar} · ${c.w.sal}</span>
-        ${c.w.reported?`<span class="note reported">Según ${c.w.reported} playeros</span><span class="note">Estimado: ${c.w.est.toLowerCase()}</span>`:`<span class="note">Estimado por viento y zona</span>`}</div>
+        ${c.w.reported?`<span class="note reported">Según ${c.w.reported} playeros</span><span class="note">Estimado: ${c.w.est.toLowerCase()}</span>`:`<span class="note">Estimado por viento y zona</span>`}
+        ${c.rainBefore>=5?`<span class="note warn">Llovió estos días: agua más turbia</span>`:""}</div>
       <div class="metric"><span class="lbl">Viento</span>
         <span class="big">${arrow(c.dir)}${c.wind} km/h ${dirName(c.dir)}</span>
         <span class="note">${windNote(c.dir)}</span></div>
       <div class="metric"><span class="lbl">Sol</span>
         <span class="big">${Math.round(c.temp)}° · UV ${c.uv}</span>
-        <span class="note">${uvText(c.uv)}${c.uv>=8?' · <span class="warn">evitá 12 a 16 h</span>':''} · nubes ${c.cloud}%${c.pr>=.3?' · <span class="warn">lluvia</span>':''}</span></div>
+        <span class="note">${uvText(c.uv)}${c.uv>=8?' · <span class="warn">evitá 12 a 16 h</span>':''} · nubes ${c.cloud}%</span>
+        <span class="note">${c.pr>=.3?'<span class="warn">Lloviendo a esa hora</span>':c.rainNear>=.5?'<span class="warn">Lluvia cerca de esa hora</span>':`Lluvia: <span class="${c.probNear>=40?"warn":""}">${c.probNear}%</span>`}</span></div>
     </div>`;
 }
 function renderVotes(t,cr){
