@@ -1,6 +1,6 @@
 // Fanáticos de la Playa: permite instalar la app y abrirla aunque falle la conexión.
 // Siempre intenta traer la versión nueva; si no hay internet, usa la última guardada.
-const CACHE = "fdlp-v1";
+const CACHE = "fdlp-v2";
 const BASE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
@@ -20,7 +20,7 @@ self.addEventListener("fetch", e => {
   // solo los archivos de la propia página; el clima y los votos van siempre directo a internet
   if (e.request.method !== "GET" || url.origin !== self.location.origin) return;
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: "no-cache" })  // siempre pregunta a GitHub si hay versión nueva
       .then(r => { const copy = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); return r; })
       .catch(() => caches.match(e.request).then(r => r || caches.match("./index.html")))
   );
