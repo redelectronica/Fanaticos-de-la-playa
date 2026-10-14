@@ -65,6 +65,11 @@ h2{font-size:1.05rem;font-weight:800;font-stretch:85%;text-transform:uppercase;l
 .head h3{font-size:1.35rem;font-weight:800;font-stretch:85%;color:var(--pop)}
 .verdict{color:var(--muted);font-size:.92rem}
 .crowdline{font-size:.88rem;font-weight:700;color:var(--accent)}
+.alert{border:2px solid var(--bad);color:var(--ink);background:var(--card);border-radius:12px;padding:12px 14px;font-size:.92rem;line-height:1.4}
+.alert b{display:block;color:var(--bad);font-family:var(--display);font-size:1.1rem;font-stretch:90%;margin-bottom:4px}
+.alert a{color:var(--accent);font-weight:700}
+.tag.ciano{border-color:var(--bad);color:var(--bad)}
+.warnc{color:var(--bad);font-weight:700}
 .why{font-size:.9rem;color:var(--muted);background:var(--bg);border-radius:10px;padding:9px 11px;margin-top:-4px}
 .why b{color:var(--ink)}
 .why .up{color:var(--good);font-weight:700}
@@ -205,6 +210,11 @@ select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var
         <label><input type="radio" name="clean" value="Limpia"><span>Limpia</span></label>
         <label><input type="radio" name="clean" value="Regular"><span>Regular</span></label>
         <label><input type="radio" name="clean" value="Sucia"><span>Sucia</span></label></div></fieldset>
+      <fieldset><legend>¿Hay cianobacterias?</legend><div class="opts">
+        <label><input type="radio" name="ciano" value="No hay"><span>No hay</span></label>
+        <label><input type="radio" name="ciano" value="Manchas"><span>Algunas manchas verdes</span></label>
+        <label><input type="radio" name="ciano" value="Espuma"><span>Mucha espuma verde</span></label></div>
+        <div class="hint">Se ven como manchas o espuma verde, tipo pintura, en el agua o en la orilla.</div></fieldset>
       <fieldset><div class="opts"><label><input type="checkbox" id="f-algae"><span>Hay algas en la orilla</span></label></div></fieldset>
       <div class="err" id="f-err" hidden></div>
       <div class="row"><button class="btn solid" type="submit" id="f-send">Enviar puntaje</button><button class="btn" type="button" id="f-cancel">Cancelar</button></div>
@@ -237,6 +247,7 @@ select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var
 
   <footer class="foot">
     <p>El color y la salinidad del agua son una estimación: la costa pasa de río (marrón, dulce) a océano (más clara y salada) de oeste a este, y el viento del este y sureste empuja agua salada hacia adentro. Cuando los playeros votan, manda lo que ven ellos. No reemplaza los análisis de las intendencias ni la bandera de los guardavidas.</p>
+    <p>Antes de bañarte, fijate si la base de guardavidas tiene la bandera sanitaria (roja con cruz verde) y revisá el estado oficial: <a href="https://montevideo.gub.uy/playas" target="_blank" rel="noopener">playas de Montevideo</a> · <a href="https://www.imcanelones.gub.uy/" target="_blank" rel="noopener">Intendencia de Canelones</a>.</p>
     <p>Privacidad: los votos son anónimos y se borran a los 2 días. La ubicación se usa solo en tu celular para saber en qué playa estás; no se guardan tus coordenadas.</p>
     <p>Datos del clima: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a></p>
   </footer>
@@ -376,16 +387,19 @@ function crowd(id){
   const clean=dist(vs,"clean",["Limpia","Regular","Sucia"]);
   // con las aguavivas, ante la duda se avisa
   const jellyLevel=jelly.c.Muchas?"Muchas":jelly.c.Pocas?"Pocas":jelly.n?"Ninguna":null;
-  return {avg:ss/sw,n:vs.length,water,jelly,jellyLevel,clean,algae:v3.filter(v=>v.algae).length};
+  // cianobacterias: como con las aguavivas, si alguien las vio hace poco se avisa
+  const ciano=dist(v3,"ciano",["No hay","Manchas","Espuma"]);
+  const cianoLevel=ciano.c.Espuma?"Espuma":ciano.c.Manchas?"Manchas":null;
+  return {avg:ss/sw,n:vs.length,water,jelly,jellyLevel,clean,ciano,cianoLevel,algae:v3.filter(v=>v.algae).length};
 }
 async function loadVotes(){
   if(!ONLINE){VOTES=(store("fdlp_local")||[]);render();return}
   const since=new Date(Date.now()-MAXMIN*60000).toISOString();
   try{
-    const r=await fetch(`${SUPABASE_URL}/rest/v1/votos?select=id,created_at,tramo,playa,puntaje,agua,aguavivas,limpieza,algas,con_gps&created_at=gte.${encodeURIComponent(since)}&order=created_at.desc&limit=1000`,{headers:sbHeaders()});
+    const r=await fetch(`${SUPABASE_URL}/rest/v1/votos?select=id,created_at,tramo,playa,puntaje,agua,aguavivas,limpieza,algas,ciano,con_gps&created_at=gte.${encodeURIComponent(since)}&order=created_at.desc&limit=1000`,{headers:sbHeaders()});
     if(!r.ok)throw new Error(r.status);
     const rows=await r.json();
-    VOTES=rows.map(x=>({id:x.id,tramo:x.tramo,beach:x.playa,at:Date.parse(x.created_at),score:x.puntaje,water:x.agua,jelly:x.aguavivas,clean:x.limpieza,algae:x.algas,gps:x.con_gps}));
+    VOTES=rows.map(x=>({id:x.id,tramo:x.tramo,beach:x.playa,at:Date.parse(x.created_at),score:x.puntaje,water:x.agua,jelly:x.aguavivas,clean:x.limpieza,ciano:x.ciano||"No hay",algae:x.algas,gps:x.con_gps}));
     votesErr=false;
   }catch(e){votesErr=true}
   render();
@@ -403,7 +417,7 @@ async function sendVote(v){
   }
   const r=await fetch(`${SUPABASE_URL}/rest/v1/votos?select=id`,{method:"POST",
     headers:sbHeaders({"Content-Type":"application/json",Prefer:"return=representation"}),
-    body:JSON.stringify({tramo:v.tramo,playa:v.beach,puntaje:v.score,agua:v.water,aguavivas:v.jelly,limpieza:v.clean,algas:v.algae,con_gps:v.gps,votante:votanteId()})});
+    body:JSON.stringify({tramo:v.tramo,playa:v.beach,puntaje:v.score,agua:v.water,aguavivas:v.jelly,limpieza:v.clean,ciano:v.ciano,algas:v.algae,con_gps:v.gps,votante:votanteId()})});
   if(!r.ok){let m="";try{m=(await r.json()).message||""}catch(e){}
     throw new Error(/votaste|seguidos/.test(m)?m:"No se pudo enviar el voto. Revisá tu conexión y probá de nuevo.")}
   try{const j=await r.json();if(j[0]&&j[0].id){MINE.add(j[0].id);store("fdlp_mios",[...MINE].slice(-50))}}catch(e){}
@@ -431,6 +445,7 @@ function cond(t){
   if(wa.clar==="Turbia")minus(2,"agua turbia");else if(wa.clar==="Regular")minus(1,"agua algo revuelta");
   if(wa.label==="Marrón")minus(.5,"agua marrón");
   if(cr.jellyLevel==="Muchas")minus(cr.jelly.top==="Muchas"?3:2,"aguavivas");else if(cr.jellyLevel==="Pocas")minus(1,"algunas aguavivas");
+  if(cr.cianoLevel==="Espuma")minus(5,"espuma de cianobacterias");else if(cr.cianoLevel==="Manchas")minus(2,"manchas de cianobacterias");
   if(cr.clean&&cr.clean.top==="Sucia")minus(1.5,"playa sucia");else if(cr.clean&&cr.clean.top==="Regular")minus(.5,"limpieza regular");
   sc=clamp(sc,1,10);
   // el puntaje de los playeros se mezcla con el calculado: más votos, más peso (hasta la mitad)
@@ -465,8 +480,18 @@ function render(){
   $("list").innerHTML=TRAMOS.map(x=>{const k=conds.get(x.id);
     return `<button class="item" type="button" data-id="${x.id}">
       <span class="swatch" style="${k?`background:${k.w.color}`:""}"></span>
-      <span style="min-width:0"><div class="n">${x.id}. ${esc(x.name)}</div><div class="w">${k?`Agua ${k.w.label.toLowerCase()}, ${k.w.clar.toLowerCase()} · ${k.wind} km/h${k.cr.avg!=null?` · playeros ${fmt(k.cr.avg)}`:""}${k.cr.jellyLevel&&k.cr.jellyLevel!=="Ninguna"?` · aguavivas: ${k.cr.jellyLevel.toLowerCase()}`:""}`:"Sin datos todavía"}</div></span>
+      <span style="min-width:0"><div class="n">${x.id}. ${esc(x.name)}</div><div class="w">${k?`Agua ${k.w.label.toLowerCase()}, ${k.w.clar.toLowerCase()} · ${k.wind} km/h${k.cr.avg!=null?` · playeros ${fmt(k.cr.avg)}`:""}${k.cr.jellyLevel&&k.cr.jellyLevel!=="Ninguna"?` · aguavivas: ${k.cr.jellyLevel.toLowerCase()}`:""}${k.cr.cianoLevel?` · <span class="warnc">⚠ cianobacterias</span>`:""}`:"Sin datos todavía"}</div></span>
       <span class="chip" style="${k?`background:${scoreColor(k.sc)}`:""}">${k?k.sc:"–"}</span></button>`}).join("");
+}
+function officialLink(t){return t.id<=4
+  ?`el <a href="https://montevideo.gub.uy/playas" target="_blank" rel="noopener">estado oficial de las playas de Montevideo</a>`
+  :`las novedades de la <a href="https://www.imcanelones.gub.uy/" target="_blank" rel="noopener">Intendencia de Canelones</a>`}
+function cianoAlert(t,cr){
+  if(!cr||!cr.cianoLevel)return "";
+  const n=cr.ciano.c.Manchas+cr.ciano.c.Espuma;
+  return `<div class="alert" role="alert"><b>⚠ Reportaron cianobacterias${cr.cianoLevel==="Espuma"?": espuma verde":""}</b>
+    No te bañes donde haya manchas o espuma verde, y cuidá que niños y mascotas no jueguen en esa agua ni en la arena manchada.
+    ${n===1?"Lo reportó 1 playero.":`Lo reportaron ${n} playeros.`} Fijate la bandera sanitaria (roja con cruz verde) y ${officialLink(t)}.</div>`;
 }
 function renderCard(t,c){
   const now=mvdHour();
@@ -476,6 +501,7 @@ function renderCard(t,c){
     return;
   }
   $("card").innerHTML=`
+    ${cianoAlert(t,c.cr)}
     <div class="head">
       <div class="score" style="background:${scoreColor(c.sc)}"><div>${c.sc}<small>de 10</small></div></div>
       <div style="min-width:0"><h3>${esc(t.name)}</h3><div class="verdict">${verdict(c.sc)} ${st.day?"mañana ":""}a las ${HOURS[st.hour]} h</div>
@@ -510,6 +536,7 @@ function renderVotes(t,cr){
     if(cr.water.n){pills.push(`<span class="pill">Agua: ${cr.water.n>1?cr.water.text:cr.water.top.toLowerCase()}</span>`)}
     if(cr.clean.n){const cls=cr.clean.top==="Sucia"?"bad":cr.clean.top==="Regular"?"warn":"good";
       pills.push(`<span class="pill ${cls}">Limpieza: ${cr.clean.divided?cr.clean.text:cr.clean.top.toLowerCase()}</span>`)}
+    if(cr.cianoLevel)pills.unshift(`<span class="pill bad">Cianobacterias: ${cr.cianoLevel==="Espuma"?"espuma":"manchas"} (${cr.ciano.c.Manchas+cr.ciano.c.Espuma} de ${cr.ciano.n})</span>`);
     if(cr.algae)pills.push(`<span class="pill warn">Algas en la orilla</span>`);
     const div=[cr.water.divided&&"el agua",cr.jelly.divided&&"las aguavivas",cr.clean.divided&&"la limpieza"].filter(Boolean);
     if(div.length){pills.unshift(`<span class="pill split">Opiniones divididas</span>`);
@@ -530,7 +557,7 @@ function renderVotes(t,cr){
         <div class="vote">
           <div><div class="t">${esc(v.beach)}</div><div class="m">${minsAgo(v.at)}${v.gps?"":" · sin ubicación"}${MINE.has(v.id)?" · tu voto":""}</div></div>
           <span class="chip" style="background:${scoreColor(v.score)}">${v.score}</span>
-          <div class="tags"><span class="tag">Agua ${esc(v.water.toLowerCase())}</span><span class="tag">Aguavivas: ${esc(v.jelly.toLowerCase())}</span><span class="tag">${esc(v.clean)}</span>${v.algae?'<span class="tag">Algas</span>':""}</div>
+          <div class="tags"><span class="tag">Agua ${esc(v.water.toLowerCase())}</span><span class="tag">Aguavivas: ${esc(v.jelly.toLowerCase())}</span><span class="tag">${esc(v.clean)}</span>${v.ciano&&v.ciano!=="No hay"?`<span class="tag ciano">Cianobacterias: ${v.ciano==="Espuma"?"espuma":"manchas"}</span>`:""}${v.algae?'<span class="tag">Algas</span>':""}</div>
         </div>`).join("")}</div>`
     :`<div class="empty">Ningún playero votó en este tramo en las últimas 4 horas. Si estás ahí, sé el primero.</div>`}`;
 }
@@ -565,8 +592,8 @@ $("f-beach").addEventListener("change",()=>{if(gpsOK){gpsOK=false;$("gps-st").cl
 $("form").addEventListener("submit",async e=>{
   e.preventDefault();
   const fd=new FormData(e.target), err=$("f-err"), send=$("f-send");
-  const v={tramo:st.sel,beach:$("f-beach").value,score:+fd.get("score"),water:fd.get("water"),jelly:fd.get("jelly"),clean:fd.get("clean"),algae:$("f-algae").checked,gps:gpsOK};
-  if(!v.score||!v.water||!v.jelly||!v.clean){err.textContent="Marcá el puntaje, cómo está el agua, si hay aguavivas y la limpieza.";err.hidden=false;return}
+  const v={tramo:st.sel,beach:$("f-beach").value,score:+fd.get("score"),water:fd.get("water"),jelly:fd.get("jelly"),clean:fd.get("clean"),ciano:fd.get("ciano"),algae:$("f-algae").checked,gps:gpsOK};
+  if(!v.score||!v.water||!v.jelly||!v.clean||!v.ciano){err.textContent="Marcá el puntaje, cómo está el agua, si hay aguavivas, la limpieza y si hay cianobacterias.";err.hidden=false;return}
   err.hidden=true; send.disabled=true; send.textContent="Enviando…";
   try{await sendVote(v);$("formcard").hidden=true;await loadVotes();$("reports").scrollIntoView({behavior:"smooth",block:"start"})}
   catch(x){err.textContent=x.message;err.hidden=false}
