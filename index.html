@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="es-UY">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Fanáticos de la Playa</title>
+<meta name="description" content="Cómo está la playa hoy en Montevideo y la Costa de Oro: agua, viento, sol, aguavivas y el puntaje de los playeros.">
+<meta name="theme-color" content="#1f6f78">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 56'%3E%3Crect width='56' height='56' rx='14' fill='%23cfe6ef'/%3E%3Ccircle cx='37' cy='17' r='8' fill='%23f2b134'/%3E%3Cpath d='M0 40 Q7 37 14 40 T28 40 T42 40 T56 40 V56 H0 Z' fill='%233c7c92'/%3E%3Cpath d='M0 46 Q14 42 28 45 T56 44 V42 Q56 56 42 56 H14 Q0 56 0 42 Z' fill='%23e2cf9f'/%3E%3Cg transform='rotate(-14 22 30)'%3E%3Cline x1='22' y1='18' x2='22' y2='47' stroke='%234a3b2a' stroke-width='2.2'/%3E%3Cpath d='M6 31 Q22 6 38 31 Q34 28 30 31 Q26 28 22 31 Q18 28 14 31 Q10 28 6 31 Z' fill='%23d9573b'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Una columna para celular: título, Hoy/Mañana, franja de costa, ficha del tramo, puntaje de playeros, lista de tramos. */
+:root{
+  --bg:#eef2f0; --card:#ffffff; --ink:#1b2a2d; --muted:#5a6a6d; --line:#d3dbd8;
+  --accent:#1f6f78; --accent-ink:#ffffff; --logo-bg:#cfe6ef; --pop:#d4147c;
+  --good:#2e8b57; --warn:#b97d0c; --bad:#c2452d;
+  --display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0f1719; --card:#162226; --ink:#e4ecea; --muted:#94a5a7; --line:#28383c;
+  --accent:#5fb3bb; --accent-ink:#0f1719; --logo-bg:#1f3a44; --pop:#ff5cb0;
+  --good:#5cc08a; --warn:#e2b04a; --bad:#ec7a62; color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;margin:0}
+.wrap{max-width:560px;margin:0 auto;padding-inline:16px;padding-block:max(18px,env(safe-area-inset-top)) max(40px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance}
+h1{font-size:2rem;font-weight:900;font-stretch:72%;letter-spacing:.01em;line-height:1}
+h2{font-size:1.05rem;font-weight:800;font-stretch:85%;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.pop{color:var(--pop)}
+.sub{color:var(--muted);font-size:.9rem}
+.brand{display:flex;justify-content:space-between;align-items:center;gap:14px}
+.brand>div{min-width:0;display:flex;flex-direction:column;gap:6px}
+.logo{width:92px;height:92px;flex:none}
+@media (max-width:380px){.logo{width:76px;height:76px}}
+.days{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--card)}
+.days button{font:inherit;font-family:var(--display);font-weight:800;font-stretch:90%;font-size:1.05rem;border:0;background:transparent;color:var(--ink);padding:10px 0;cursor:pointer}
+.days button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.days button:focus-visible{outline:3px solid var(--ink);outline-offset:-3px}
+.status{font-size:.8rem;color:var(--muted);margin-top:-10px}
+.status .err{color:var(--bad);font-weight:700}
+.coast{display:flex;flex-direction:column;gap:6px}
+.strip{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;height:54px}
+.seg{border:0;border-radius:6px;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;font-family:var(--display);font-weight:800;font-size:.8rem;color:#fff;padding:0 0 5px;text-shadow:0 1px 2px rgba(0,0,0,.4);background:var(--line)}
+.seg[aria-pressed="true"]{box-shadow:0 0 0 3px var(--ink)}
+.seg:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.ends{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px}
+.head{display:flex;gap:14px;align-items:center}
+.score{flex:none;width:76px;height:76px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:900;font-stretch:80%;font-size:2.2rem;color:#fff;line-height:1;background:var(--line)}
+.score small{display:block;font-size:.7rem;font-weight:600;font-stretch:100%;opacity:.9;text-align:center}
+.head h3{font-size:1.35rem;font-weight:800;font-stretch:85%;color:var(--pop)}
+.verdict{color:var(--muted);font-size:.92rem}
+.crowdline{font-size:.88rem;font-weight:700;color:var(--accent)}
+.fc{font-size:.85rem;color:var(--muted);font-style:italic}
+.beaches{font-size:.85rem;color:var(--muted)}
+.hours{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.hours button{font:inherit;font-weight:700;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:8px;padding:7px 0;cursor:pointer;font-variant-numeric:tabular-nums}
+.hours button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.hours button.past{opacity:.55}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media (max-width:420px){.grid{grid-template-columns:1fr}}
+.metric{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.metric .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+.metric .big{font-family:var(--display);font-weight:800;font-stretch:85%;font-size:1.35rem;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:8px}
+.metric .note{font-size:.85rem;color:var(--muted)}
+.swatch{width:18px;height:18px;border-radius:50%;flex:none;border:1px solid rgba(0,0,0,.15);background:var(--line)}
+.arrow{display:inline-block;width:20px;height:20px}
+.warn{color:var(--warn);font-weight:700}
+.reported{color:var(--accent);font-weight:700}
+.btn{font:inherit;font-weight:700;border:1px solid var(--accent);color:var(--accent);background:transparent;border-radius:8px;padding:8px 12px;cursor:pointer}
+.btn.solid{background:var(--accent);color:var(--accent-ink)}
+.btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.btn:disabled{opacity:.6;cursor:default}
+.hint{font-size:.85rem;color:var(--muted)}
+.invite{display:flex;flex-direction:column;align-items:flex-start;gap:10px;background:var(--bg);border-radius:10px;padding:12px}
+.invite p{margin:0;font-weight:700;max-width:40ch}
+.avg{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.avg .n{font-family:var(--display);font-weight:900;font-stretch:80%;font-size:2.6rem;line-height:1;font-variant-numeric:tabular-nums}
+.avg .c{color:var(--muted);font-size:.9rem}
+.summary{display:flex;gap:8px;flex-wrap:wrap}
+.pill{font-size:.8rem;font-weight:700;border-radius:99px;padding:4px 10px;border:1px solid var(--line)}
+.pill.bad{border-color:var(--bad);color:var(--bad)}
+.pill.warn{border-color:var(--warn);color:var(--warn)}
+.pill.good{border-color:var(--good);color:var(--good)}
+.pill.split{border-style:dashed;border-color:var(--pop);color:var(--pop)}
+.splitnote{font-size:.85rem;color:var(--muted)}
+.votes{display:flex;flex-direction:column}
+.vote{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
+.vote .t{font-weight:700}
+.vote .m{font-size:.8rem;color:var(--muted)}
+.tags{display:flex;gap:4px;flex-wrap:wrap;grid-column:1/-1}
+.tag{font-size:.72rem;font-weight:700;border-radius:4px;padding:1px 6px;background:var(--bg);border:1px solid var(--line)}
+.empty{font-size:.9rem;color:var(--muted)}
+form{display:flex;flex-direction:column;gap:14px}
+fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;min-width:0}
+legend{font-weight:700;margin-bottom:6px;padding:0}
+.opts{display:flex;gap:6px;flex-wrap:wrap}
+.opts label{cursor:pointer;position:relative}
+.opts input{position:absolute;opacity:0;pointer-events:none}
+.opts span{display:inline-block;border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-weight:700}
+.opts input:checked+span{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.opts input:focus-visible+span{outline:3px solid var(--accent)}
+.nums{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
+.nums span{display:block;text-align:center;padding:9px 0;font-variant-numeric:tabular-nums}
+@media (max-width:380px){.nums{grid-template-columns:repeat(5,1fr)}}
+.gps{border:1px dashed var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.gps .st{font-size:.88rem}
+.gps .st.ok{color:var(--good);font-weight:700}
+select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px;max-width:100%}
+.err{color:var(--bad);font-weight:700;font-size:.9rem}
+.ok{color:var(--good);font-weight:700;font-size:.9rem}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.list{display:flex;flex-direction:column}
+.item{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:11px 4px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.item:focus-visible{outline:3px solid var(--accent)}
+.item .n{font-weight:700}
+.item .w{font-size:.82rem;color:var(--muted)}
+.chip{font-family:var(--display);font-weight:900;font-stretch:80%;font-size:1.05rem;min-width:40px;text-align:center;border-radius:8px;padding:3px 6px;color:#fff;font-variant-numeric:tabular-nums;background:var(--muted)}
+.foot{font-size:.82rem;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
+.foot p{margin:0 0 6px}
+.foot a{color:var(--accent)}
+@media (prefers-reduced-motion:no-preference){.seg,.score,.chip{transition:background-color .35s}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="brand">
+    <div>
+      <h1>Fanáticos de la <span class="pop">Playa</span></h1>
+      <div class="sub">Montevideo y Costa de Oro · agua, sol y viento</div>
+    </div>
+    <svg class="logo" viewBox="0 0 56 56" role="img" aria-label="Logo: sol y sombrilla en la playa">
+      <rect x="0" y="0" width="56" height="56" rx="14" fill="var(--logo-bg)"/>
+      <circle cx="37" cy="17" r="8" fill="#f2b134"/>
+      <g stroke="#f2b134" stroke-width="2" stroke-linecap="round">
+        <line x1="37" y1="4" x2="37" y2="6.5"/><line x1="49" y1="17" x2="46.5" y2="17"/>
+        <line x1="45.5" y1="8.5" x2="43.8" y2="10.2"/><line x1="45.5" y1="25.5" x2="43.8" y2="23.8"/>
+      </g>
+      <path d="M0 40 Q7 37 14 40 T28 40 T42 40 T56 40 V56 H0 Z" fill="#3c7c92"/>
+      <path d="M0 46 Q14 42 28 45 T56 44 V42 Q56 56 42 56 H14 Q0 56 0 42 Z" fill="#e2cf9f"/>
+      <g transform="rotate(-14 22 30)">
+        <line x1="22" y1="18" x2="22" y2="47" stroke="#4a3b2a" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M6 31 Q22 6 38 31 Q34 28 30 31 Q26 28 22 31 Q18 28 14 31 Q10 28 6 31 Z" fill="#d9573b"/>
+        <path d="M22 13.5 Q19 22 18 30.2 Q20 28.6 22 31 Q24 28.6 26 30.2 Q25 22 22 13.5 Z" fill="#fff"/>
+      </g>
+    </svg>
+  </header>
+
+  <div class="days" id="days" role="group" aria-label="Día">
+    <button type="button" data-day="0" aria-pressed="true">Hoy</button>
+    <button type="button" data-day="1" aria-pressed="false">Mañana</button>
+  </div>
+  <div class="status" id="status">Cargando el clima…</div>
+
+  <section class="coast" aria-label="Costa de oeste a este">
+    <div class="strip" id="strip"></div>
+    <div class="ends"><span>← Oeste · agua dulce</span><span>Este · más salada →</span></div>
+  </section>
+
+  <section class="card" id="card" aria-live="polite"></section>
+
+  <section class="card" id="reports" aria-label="Puntaje de playeros"></section>
+
+  <section class="card" id="formcard" hidden>
+    <form id="form" novalidate>
+      <h2 class="pop">Puntuá la playa</h2>
+      <div class="gps">
+        <div class="st" id="gps-st">Para votar con ubicación tenés que estar en la playa.</div>
+        <div><button class="btn" type="button" id="gps-btn">Detectar mi playa</button></div>
+      </div>
+      <fieldset><legend>Playa</legend><select id="f-beach" aria-label="Playa"></select></fieldset>
+      <fieldset><legend>¿Cómo está la playa hoy? (1 a 10)</legend>
+        <div class="opts nums" id="nums"></div></fieldset>
+      <fieldset><legend>¿Cómo está el agua?</legend><div class="opts">
+        <label><input type="radio" name="water" value="Clara"><span>Clara</span></label>
+        <label><input type="radio" name="water" value="Verdosa"><span>Verdosa</span></label>
+        <label><input type="radio" name="water" value="Marrón"><span>Marrón</span></label></div></fieldset>
+      <fieldset><legend>Aguavivas</legend><div class="opts">
+        <label><input type="radio" name="jelly" value="Ninguna"><span>Ninguna</span></label>
+        <label><input type="radio" name="jelly" value="Pocas"><span>Pocas</span></label>
+        <label><input type="radio" name="jelly" value="Muchas"><span>Muchas</span></label></div></fieldset>
+      <fieldset><legend>Limpieza de la playa</legend><div class="opts">
+        <label><input type="radio" name="clean" value="Limpia"><span>Limpia</span></label>
+        <label><input type="radio" name="clean" value="Regular"><span>Regular</span></label>
+        <label><input type="radio" name="clean" value="Sucia"><span>Sucia</span></label></div></fieldset>
+      <fieldset><div class="opts"><label><input type="checkbox" id="f-algae"><span>Hay algas en la orilla</span></label></div></fieldset>
+      <div class="err" id="f-err" hidden></div>
+      <div class="row"><button class="btn solid" type="submit" id="f-send">Enviar puntaje</button><button class="btn" type="button" id="f-cancel">Cancelar</button></div>
+      <div class="hint" id="f-mode"></div>
+    </form>
+  </section>
+
+  <section>
+    <h2 style="margin-bottom:6px">Todos los tramos</h2>
+    <div class="list" id="list"></div>
+  </section>
+
+  <footer class="foot">
+    <p>El color y la salinidad del agua son una estimación: la costa pasa de río (marrón, dulce) a océano (más clara y salada) de oeste a este, y el viento del este y sureste empuja agua salada hacia adentro. Cuando los playeros votan, manda lo que ven ellos. No reemplaza los análisis de las intendencias ni la bandera de los guardavidas.</p>
+    <p>Privacidad: los votos son anónimos y se borran a los 2 días. La ubicación se usa solo en tu celular para saber en qué playa estás; no se guardan tus coordenadas.</p>
+    <p>Datos del clima: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a></p>
+  </footer>
+</div>
+
+<script>
+// ===== Configuración =====
+const SUPABASE_URL = "https://sgilsmuazyphvclxdeoi.supabase.co";
+const SUPABASE_KEY = "sb_publishable_W69j7lDdPAaizqlz0RSctg_bjth2Jzk"; // clave pública
+
+// ===== Playas: coordenadas aproximadas [lat, lon] =====
+const TRAMOS=[
+ {id:1,name:"Montevideo oeste",b:{"Playa del Cerro":[-34.895,-56.258],"La Colorada":[-34.866,-56.33],"Punta Espinillo":[-34.83,-56.41]}},
+ {id:2,name:"Ramírez – Pocitos",b:{"Ramírez":[-34.917,-56.17],"Trouville":[-34.917,-56.157],"Pocitos":[-34.914,-56.15]}},
+ {id:3,name:"Buceo – Malvín",b:{"Buceo":[-34.906,-56.13],"Malvín":[-34.898,-56.103],"Playa Honda":[-34.897,-56.091],"Los Ingleses":[-34.895,-56.083]}},
+ {id:4,name:"Carrasco – Miramar",b:{"Carrasco":[-34.889,-56.053],"Miramar":[-34.884,-56.032]}},
+ {id:5,name:"Ciudad de la Costa",b:{"Shangrilá":[-34.876,-56.005],"Lagomar":[-34.857,-55.968],"Solymar":[-34.846,-55.942],"Lomas de Solymar":[-34.836,-55.915]}},
+ {id:6,name:"El Pinar – Neptunia",b:{"El Pinar":[-34.812,-55.885],"Neptunia":[-34.795,-55.86],"Pinamar – Pinepark":[-34.789,-55.84]}},
+ {id:7,name:"Salinas – Atlántida",b:{"Salinas":[-34.785,-55.818],"Marindia":[-34.781,-55.8],"Fortín de Santa Rosa":[-34.779,-55.785],"Villa Argentina":[-34.777,-55.772],"Atlántida":[-34.775,-55.76]}},
+ {id:8,name:"Las Toscas – Bello Horizonte",b:{"Las Toscas":[-34.77,-55.705],"Parque del Plata":[-34.772,-55.688],"Las Vegas":[-34.77,-55.674],"La Floresta":[-34.765,-55.66],"Costa Azul":[-34.765,-55.635],"Bello Horizonte":[-34.765,-55.62]}},
+ {id:9,name:"Guazuvirá – Jaureguiberry",b:{"Guazuvirá":[-34.77,-55.6],"San Luis":[-34.775,-55.575],"Los Titanes":[-34.777,-55.562],"La Tuna":[-34.778,-55.552],"Araminda":[-34.78,-55.54],"Santa Lucía del Este":[-34.785,-55.52],"Biarritz":[-34.79,-55.505],"Cuchilla Alta":[-34.797,-55.43],"El Galeón":[-34.802,-55.415],"Santa Ana":[-34.807,-55.4],"Balneario Argentino":[-34.812,-55.385],"Paraíso Suizo":[-34.815,-55.372],"Jaureguiberry":[-34.818,-55.36]}}
+];
+TRAMOS.forEach(t=>{
+  const c=Object.values(t.b);
+  t.lat=c.reduce((s,p)=>s+p[0],0)/c.length;
+  t.lon=c.reduce((s,p)=>s+p[1],0)/c.length;
+  t.beaches=Object.keys(t.b).join(", ");
+});
+
+const DIRS=["N","NE","E","SE","S","SO","O","NO"];
+const HOURS=[10,13,16,19];
+const MAXMIN=240;   // los votos cuentan 4 horas
+const NEAR_M=1500;  // distancia máxima a la playa para votar con ubicación
+const WCOL={Clara:"rgb(60,124,146)",Verdosa:"rgb(104,132,72)",Marrón:"rgb(138,104,60)"};
+const ONLINE=!!(SUPABASE_URL&&SUPABASE_KEY);
+
+// ===== Utilidades =====
+const rad=d=>d*Math.PI/180, deg=r=>r*180/Math.PI, clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const $=id=>document.getElementById(id);
+const pad=n=>String(n).padStart(2,"0");
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function store(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||"null");localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}}
+function mvdDate(off){return new Intl.DateTimeFormat("en-CA",{timeZone:"America/Montevideo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(Date.now()+off*864e5))}
+function mvdHour(){return +new Intl.DateTimeFormat("en-GB",{timeZone:"America/Montevideo",hour:"2-digit",hourCycle:"h23"}).format(new Date())}
+function mvdTime(d){return new Intl.DateTimeFormat("es-UY",{timeZone:"America/Montevideo",hour:"2-digit",minute:"2-digit"}).format(d)}
+const ageMin=t=>(Date.now()-t)/60000;
+function minsAgo(t){const m=Math.max(0,Math.round(ageMin(t)));return m<1?"recién":m<60?`hace ${m} min`:`hace ${Math.floor(m/60)} h${m%60?" "+m%60+" min":""}`}
+const fmt=x=>x.toFixed(1).replace(".",",");
+function dirName(d){return DIRS[Math.round(((d%360)+360)%360/45)%8]}
+function votanteId(){
+  let id=store("fdlp_votante");
+  if(!id){id=(crypto.randomUUID?crypto.randomUUID():"10000000-1000-4000-8000-100000000000".replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16)));store("fdlp_votante",id)}
+  return id;
+}
+
+// ===== Estado =====
+let st={day:0,hour:defaultSlot(0),sel:store("fdlp_tramo")||5};
+let WX=null, wxErr=false, wxAt=null;
+let VOTES=[], votesErr=false;
+let MINE=new Set(store("fdlp_mios")||[]);
+function defaultSlot(day){if(day===1)return 1;const h=mvdHour();const i=HOURS.findIndex(x=>x>=h);return i<0?HOURS.length-1:i}
+
+// ===== Clima (Open-Meteo) =====
+async function loadWeather(){
+  const q=new URLSearchParams({
+    latitude:TRAMOS.map(t=>t.lat.toFixed(3)).join(","),
+    longitude:TRAMOS.map(t=>t.lon.toFixed(3)).join(","),
+    hourly:"temperature_2m,wind_speed_10m,wind_direction_10m,uv_index,cloud_cover,precipitation",
+    timezone:"America/Montevideo",past_days:"2",forecast_days:"2",wind_speed_unit:"kmh"
+  });
+  try{
+    const r=await fetch("https://api.open-meteo.com/v1/forecast?"+q);
+    if(!r.ok)throw new Error(r.status);
+    let j=await r.json(); if(!Array.isArray(j))j=[j];
+    WX=j.map(x=>x.hourly); wxErr=false; wxAt=new Date();
+  }catch(e){wxErr=true}
+  render();
+}
+function idxFor(h,day,hour){return h.time.indexOf(`${mvdDate(day)}T${pad(hour)}:00`)}
+function wxAtSlot(t){
+  if(!WX)return null;
+  const h=WX[TRAMOS.indexOf(t)]; if(!h)return null;
+  const i=idxFor(h,st.day,HOURS[st.hour]); if(i<0)return null;
+  // viento promedio de las últimas 24 h (mueve el agua) y lluvia de las últimas 48 h
+  let u=0,v=0,n=0,rain=0;
+  for(let k=Math.max(0,i-23);k<=i;k++){const s=h.wind_speed_10m[k]||0,d=h.wind_direction_10m[k]||0;u+=s*Math.sin(rad(d));v+=s*Math.cos(rad(d));n++}
+  for(let k=Math.max(0,i-47);k<=i;k++)rain+=h.precipitation[k]||0;
+  u/=n;v/=n;
+  return {temp:h.temperature_2m[i],wind:Math.round(h.wind_speed_10m[i]),dir:h.wind_direction_10m[i],uv:Math.round(h.uv_index[i]??0),
+    cloud:Math.round(h.cloud_cover[i]),pr:h.precipitation[i]||0,avgDir:(deg(Math.atan2(u,v))+360)%360,avgSpeed:Math.hypot(u,v),rain};
+}
+
+// ===== Agua estimada =====
+function mix(a,b,t){return a.map((v,i)=>Math.round(v+(b[i]-v)*t))}
+function waterColor(s){const brown=[138,104,60],green=[104,132,72],blue=[44,112,136];
+  return `rgb(${s<.45?mix(brown,green,s/.45):mix(green,blue,clamp((s-.45)/.35,0,1))})`}
+function water(t,w){
+  const base=.12+(t.lon+56.26)/.86*.5;                                   // más salada hacia el este
+  const push=Math.cos(rad(w.avgDir-135))*Math.min(w.avgSpeed,40)/30*.25; // viento SE mete agua salada
+  const rainFx=Math.min(w.rain/25,1)*.2;                                  // lluvia trae agua dulce
+  const s=clamp(base+push-rainFx,0,1);
+  const onshore=Math.cos(rad(w.dir-180));
+  const turb=(onshore>.3?w.wind/35*onshore:.1)+(1-s)*.5+Math.min(w.rain/25,1)*.3;
+  let label,sal;
+  if(s<.28){label="Marrón";sal="Dulce"}else if(s<.45){label="Marrón verdosa";sal="Salobre"}
+  else if(s<.6){label="Verdosa";sal="Salobre"}else{label="Verde azulada";sal="Más salada"}
+  return {s,label,sal,clar:turb<.55?"Clara":turb<.85?"Regular":"Turbia",color:waterColor(s)};
+}
+
+// ===== Votos de playeros =====
+function recent(id){return VOTES.filter(v=>v.tramo===id&&ageMin(v.at)<=MAXMIN).sort((a,b)=>b.at-a.at)}
+// los votos con ubicación y los más nuevos pesan más
+function weight(v){const a=ageMin(v.at);return (v.gps?1:.5)*(a<60?1:a<120?.75:.5)}
+function dist(vs,key,values){
+  const c={},w={};values.forEach(x=>{c[x]=0;w[x]=0});let tw=0;
+  vs.forEach(v=>{if(!(v[key] in c))return;c[v[key]]++;const ww=weight(v);w[v[key]]+=ww;tw+=ww});
+  let top=null;values.forEach(x=>{if(c[x]&&(top===null||w[x]>w[top]))top=x});
+  const n=vs.length, share=tw&&top?w[top]/tw:0;
+  return {c,top,n,share,divided:n>=2&&share<.6,
+    text:values.filter(x=>c[x]).sort((a,b)=>c[b]-c[a]).map(x=>`${c[x]} ${x.toLowerCase()}`).join(" · ")};
+}
+function crowd(id){
+  const none={avg:null,n:0};
+  if(st.day===1)return none;
+  const vs=recent(id); if(!vs.length)return none;
+  let sw=0,ss=0;vs.forEach(v=>{const w=weight(v);sw+=w;ss+=w*v.score});
+  const v3=vs.filter(v=>ageMin(v.at)<=180), v2=vs.filter(v=>ageMin(v.at)<=120);
+  const water=dist(v3,"water",["Clara","Verdosa","Marrón"]);
+  const jelly=dist(v2,"jelly",["Ninguna","Pocas","Muchas"]);
+  const clean=dist(vs,"clean",["Limpia","Regular","Sucia"]);
+  // con las aguavivas, ante la duda se avisa
+  const jellyLevel=jelly.c.Muchas?"Muchas":jelly.c.Pocas?"Pocas":jelly.n?"Ninguna":null;
+  return {avg:ss/sw,n:vs.length,water,jelly,jellyLevel,clean,algae:v3.filter(v=>v.algae).length};
+}
+async function loadVotes(){
+  if(!ONLINE){VOTES=(store("fdlp_local")||[]);render();return}
+  const since=new Date(Date.now()-MAXMIN*60000).toISOString();
+  try{
+    const r=await fetch(`${SUPABASE_URL}/rest/v1/votos?select=id,created_at,tramo,playa,puntaje,agua,aguavivas,limpieza,algas,con_gps&created_at=gte.${encodeURIComponent(since)}&order=created_at.desc&limit=1000`,{headers:sbHeaders()});
+    if(!r.ok)throw new Error(r.status);
+    const rows=await r.json();
+    VOTES=rows.map(x=>({id:x.id,tramo:x.tramo,beach:x.playa,at:Date.parse(x.created_at),score:x.puntaje,water:x.agua,jelly:x.aguavivas,clean:x.limpieza,algae:x.algas,gps:x.con_gps}));
+    votesErr=false;
+  }catch(e){votesErr=true}
+  render();
+}
+function sbHeaders(extra){
+  const h={apikey:SUPABASE_KEY,...extra};
+  if(!SUPABASE_KEY.startsWith("sb_"))h.Authorization="Bearer "+SUPABASE_KEY;
+  return h;
+}
+async function sendVote(v){
+  if(!ONLINE){
+    const local=store("fdlp_local")||[];
+    if(local.some(x=>x.beach===v.beach&&ageMin(x.at)<180))throw new Error(`Ya votaste ${v.beach} hace poco. Podés volver a votar en 3 horas.`);
+    const nv={...v,id:"l"+Date.now(),at:Date.now()};local.push(nv);store("fdlp_local",local.filter(x=>ageMin(x.at)<2880));MINE.add(nv.id);return;
+  }
+  const r=await fetch(`${SUPABASE_URL}/rest/v1/votos?select=id`,{method:"POST",
+    headers:sbHeaders({"Content-Type":"application/json",Prefer:"return=representation"}),
+    body:JSON.stringify({tramo:v.tramo,playa:v.beach,puntaje:v.score,agua:v.water,aguavivas:v.jelly,limpieza:v.clean,algas:v.algae,con_gps:v.gps,votante:votanteId()})});
+  if(!r.ok){let m="";try{m=(await r.json()).message||""}catch(e){}
+    throw new Error(/votaste|seguidos/.test(m)?m:"No se pudo enviar el voto. Revisá tu conexión y probá de nuevo.")}
+  try{const j=await r.json();if(j[0]&&j[0].id){MINE.add(j[0].id);store("fdlp_mios",[...MINE].slice(-50))}}catch(e){}
+}
+
+// ===== Puntaje del día =====
+function cond(t){
+  const w=wxAtSlot(t); if(!w)return null;
+  const wa={...water(t,w)}, cr=crowd(t.id);
+  if(cr.water&&cr.water.n>=2&&!cr.water.divided){ // lo que ven los playeros manda sobre la estimación
+    wa.est=wa.label; wa.reported=cr.water.c[cr.water.top]; wa.label=cr.water.top; wa.color=WCOL[cr.water.top];
+    wa.clar=cr.water.top==="Clara"?"Clara":cr.water.top==="Verdosa"?"Regular":"Turbia";
+  }
+  let sc=10;
+  if(w.temp<18)sc-=3;else if(w.temp<21)sc-=1.5;
+  if(w.wind>35)sc-=4;else if(w.wind>25)sc-=2.5;else if(w.wind>15)sc-=1;
+  if(w.cloud>80)sc-=2;else if(w.cloud>50)sc-=1;
+  if(w.pr>=.3)sc-=3;
+  if(wa.clar==="Regular")sc-=1;else if(wa.clar==="Turbia")sc-=2;
+  if(wa.label==="Marrón")sc-=.5;
+  if(cr.jellyLevel==="Muchas")sc-=cr.jelly.top==="Muchas"?3:2;else if(cr.jellyLevel==="Pocas")sc-=1;
+  if(cr.clean&&cr.clean.top==="Sucia")sc-=1.5;else if(cr.clean&&cr.clean.top==="Regular")sc-=.5;
+  return {...w,w:wa,sc:clamp(Math.round(sc),1,10),cr};
+}
+function scoreColor(sc){return sc>=8?"var(--good)":sc>=5?"var(--warn)":"var(--bad)"}
+function verdict(sc){return sc>=8?"Buen día de playa":sc>=5?"Se puede ir, con algún pero":"Mejor otro día"}
+function uvText(uv){return uv>=8?"Muy alto":uv>=6?"Alto":uv>=3?"Moderado":"Bajo"}
+function arrow(d){return `<svg class="arrow" viewBox="0 0 20 20" aria-hidden="true" style="transform:rotate(${d+180}deg)"><path d="M10 2 L15 12 L10 9.5 L5 12 Z" fill="currentColor"/><rect x="9" y="9" width="2" height="9" fill="currentColor"/></svg>`}
+function windNote(d){const on=Math.cos(rad(d-180));return on>.3?"Del mar hacia la costa: más olas":on<-.3?"De tierra: agua más calma":"Paralelo a la costa"}
+
+// ===== Dibujo =====
+function render(){
+  const t=TRAMOS.find(x=>x.id===st.sel)||TRAMOS[4];
+  document.querySelectorAll("#days button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.day===st.day));
+  $("status").innerHTML=wxErr?`<span class="err">No se pudo cargar el clima.</span> <button class="btn" type="button" id="wx-retry" style="padding:2px 8px">Reintentar</button>`
+    :WX?`Clima actualizado a las ${mvdTime(wxAt)}${votesErr?' · <span class="err">no se pudieron cargar los votos</span>':""}`:"Cargando el clima…";
+  const conds=new Map(TRAMOS.map(x=>[x.id,cond(x)]));
+  $("strip").innerHTML=TRAMOS.map(x=>{const c=conds.get(x.id);
+    return `<button class="seg" style="${c?`background:${c.w.color}`:""}" aria-pressed="${x.id===t.id}" data-id="${x.id}" aria-label="${esc(x.name)}${c?", agua "+c.w.label.toLowerCase():""}">${x.id}</button>`}).join("");
+  renderCard(t,conds.get(t.id));
+  renderVotes(t,conds.get(t.id)?.cr||crowd(t.id));
+  $("list").innerHTML=TRAMOS.map(x=>{const k=conds.get(x.id);
+    return `<button class="item" type="button" data-id="${x.id}">
+      <span class="swatch" style="${k?`background:${k.w.color}`:""}"></span>
+      <span style="min-width:0"><div class="n">${x.id}. ${esc(x.name)}</div><div class="w">${k?`Agua ${k.w.label.toLowerCase()}, ${k.w.clar.toLowerCase()} · ${k.wind} km/h${k.cr.avg!=null?` · playeros ${fmt(k.cr.avg)}`:""}${k.cr.jellyLevel&&k.cr.jellyLevel!=="Ninguna"?` · aguavivas: ${k.cr.jellyLevel.toLowerCase()}`:""}`:"Sin datos todavía"}</div></span>
+      <span class="chip" style="${k?`background:${scoreColor(k.sc)}`:""}">${k?k.sc:"–"}</span></button>`}).join("");
+}
+function renderCard(t,c){
+  const now=mvdHour();
+  const hours=`<div class="hours" role="group" aria-label="Hora">${HOURS.map((x,i)=>`<button type="button" data-h="${i}" aria-pressed="${i===st.hour}" class="${st.day===0&&x+2<now?"past":""}">${x}:00</button>`).join("")}</div>`;
+  if(!c){
+    $("card").innerHTML=`<div class="head"><div class="score">–</div><div style="min-width:0"><h3>${esc(t.name)}</h3><div class="verdict">${wxErr?"No hay datos del clima en este momento.":"Cargando el clima…"}</div></div></div><div class="beaches">${esc(t.beaches)}</div>${hours}`;
+    return;
+  }
+  $("card").innerHTML=`
+    <div class="head">
+      <div class="score" style="background:${scoreColor(c.sc)}"><div>${c.sc}<small>de 10</small></div></div>
+      <div style="min-width:0"><h3>${esc(t.name)}</h3><div class="verdict">${verdict(c.sc)} ${st.day?"mañana ":""}a las ${HOURS[st.hour]} h</div>
+      ${st.day?`<div class="fc">Pronóstico: puede cambiar</div>`:""}
+      ${c.cr.avg!=null?`<div class="crowdline">Playeros: ${fmt(c.cr.avg)} · ${c.cr.n} voto${c.cr.n>1?"s":""}</div>`:""}</div>
+    </div>
+    <div class="beaches">${esc(t.beaches)}</div>
+    ${hours}
+    <div class="grid">
+      <div class="metric"><span class="lbl">Agua</span>
+        <span class="big"><span class="swatch" style="background:${c.w.color}"></span>${c.w.label}</span>
+        <span class="note">${c.w.clar} · ${c.w.sal}</span>
+        ${c.w.reported?`<span class="note reported">Según ${c.w.reported} playeros</span><span class="note">Estimado: ${c.w.est.toLowerCase()}</span>`:`<span class="note">Estimado por viento y zona</span>`}</div>
+      <div class="metric"><span class="lbl">Viento</span>
+        <span class="big">${arrow(c.dir)}${c.wind} km/h ${dirName(c.dir)}</span>
+        <span class="note">${windNote(c.dir)}</span></div>
+      <div class="metric"><span class="lbl">Sol</span>
+        <span class="big">${Math.round(c.temp)}° · UV ${c.uv}</span>
+        <span class="note">${uvText(c.uv)}${c.uv>=8?' · <span class="warn">evitá 12 a 16 h</span>':''} · nubes ${c.cloud}%${c.pr>=.3?' · <span class="warn">lluvia</span>':''}</span></div>
+    </div>`;
+}
+function renderVotes(t,cr){
+  if(st.day===1){$("reports").innerHTML=`<h2 class="pop">Puntaje de playeros</h2><div class="empty">Los playeros votan cómo está la playa en el momento. Para ver los votos de hoy, tocá "Hoy".</div>`;return}
+  const vs=recent(t.id);
+  const pills=[], notes=[];
+  if(cr.avg!=null){
+    if(cr.jellyLevel){const cls=cr.jellyLevel==="Muchas"?"bad":cr.jellyLevel==="Pocas"?"warn":"good";
+      pills.push(`<span class="pill ${cls}">Aguavivas: ${cr.jelly.n>1&&cr.jelly.divided?cr.jelly.text:cr.jellyLevel.toLowerCase()}</span>`)}
+    if(cr.water.n){pills.push(`<span class="pill">Agua: ${cr.water.n>1?cr.water.text:cr.water.top.toLowerCase()}</span>`)}
+    if(cr.clean.n){const cls=cr.clean.top==="Sucia"?"bad":cr.clean.top==="Regular"?"warn":"good";
+      pills.push(`<span class="pill ${cls}">Limpieza: ${cr.clean.divided?cr.clean.text:cr.clean.top.toLowerCase()}</span>`)}
+    if(cr.algae)pills.push(`<span class="pill warn">Algas en la orilla</span>`);
+    const div=[cr.water.divided&&"el agua",cr.jelly.divided&&"las aguavivas",cr.clean.divided&&"la limpieza"].filter(Boolean);
+    if(div.length){pills.unshift(`<span class="pill split">Opiniones divididas</span>`);
+      notes.push(`Los playeros no coinciden sobre ${div.join(" y ").replace(/ y (?=.* y )/,", ")}. Puede cambiar de una punta a otra de la playa o de una hora a otra.`)}
+    if(cr.jellyLevel==="Muchas"&&cr.jelly.top!=="Muchas")notes.push("Alguien vio muchas aguavivas hace poco: mejor fijarse antes de entrar al agua.");
+  }
+  $("reports").innerHTML=`
+    <h2 class="pop">Puntaje de playeros</h2>
+    <div class="invite">
+      <p>Colaborá con la comunidad de fanáticos playeros puntuando tu experiencia en la playa en el día de hoy.</p>
+      <button class="btn solid" type="button" id="open-form">Puntuar mi playa</button>
+    </div>
+    ${vs.length?`
+      <div class="avg"><span class="n" style="color:${scoreColor(Math.round(cr.avg))}">${fmt(cr.avg)}</span><span class="c">promedio de ${vs.length} playero${vs.length>1?"s":""} en las últimas 4 h</span></div>
+      ${pills.length?`<div class="summary">${pills.join("")}</div>`:""}
+      ${notes.map(n=>`<div class="splitnote">${n}</div>`).join("")}
+      <div class="votes">${vs.map(v=>`
+        <div class="vote">
+          <div><div class="t">${esc(v.beach)}</div><div class="m">${minsAgo(v.at)}${v.gps?"":" · sin ubicación"}${MINE.has(v.id)?" · tu voto":""}</div></div>
+          <span class="chip" style="background:${scoreColor(v.score)}">${v.score}</span>
+          <div class="tags"><span class="tag">Agua ${esc(v.water.toLowerCase())}</span><span class="tag">Aguavivas: ${esc(v.jelly.toLowerCase())}</span><span class="tag">${esc(v.clean)}</span>${v.algae?'<span class="tag">Algas</span>':""}</div>
+        </div>`).join("")}</div>`
+    :`<div class="empty">Ningún playero votó en este tramo en las últimas 4 horas. Si estás ahí, sé el primero.</div>`}`;
+}
+
+// ===== Formulario de voto =====
+let gpsOK=false;
+$("nums").innerHTML=Array.from({length:10},(_,i)=>`<label><input type="radio" name="score" value="${i+1}"><span>${i+1}</span></label>`).join("");
+$("f-mode").textContent=ONLINE?"Tu voto es anónimo y lo ven todos los playeros durante 4 horas.":"Modo de prueba: tu voto se guarda solo en este celular.";
+function fillBeaches(t,selected){$("f-beach").innerHTML=Object.keys(t.b).map(b=>`<option${b===selected?" selected":""}>${esc(b)}</option>`).join("")}
+function openForm(){
+  if(st.day!==0){st.day=0;st.hour=defaultSlot(0);render()}
+  const t=TRAMOS.find(x=>x.id===st.sel);
+  $("form").reset(); gpsOK=false; fillBeaches(t);
+  const g=$("gps-st"); g.className="st"; g.textContent="Para votar con ubicación tenés que estar en la playa.";
+  $("f-err").hidden=true;
+  $("formcard").hidden=false; $("formcard").scrollIntoView({behavior:"smooth",block:"start"});
+}
+function distM(a,b){const R=6371000,dLat=rad(b[0]-a[0]),dLon=rad(b[1]-a[1]);
+  const x=Math.sin(dLat/2)**2+Math.cos(rad(a[0]))*Math.cos(rad(b[0]))*Math.sin(dLon/2)**2;return 2*R*Math.asin(Math.sqrt(x))}
+function nearest(p){let best=null;TRAMOS.forEach(t=>Object.entries(t.b).forEach(([name,c])=>{const d=distM(p,c);if(!best||d<best.d)best={t,name,d}}));return best}
+$("gps-btn").addEventListener("click",()=>{
+  const g=$("gps-st"), fail=()=>{g.className="st";g.textContent="No se pudo obtener la ubicación. Elegí la playa de la lista; tu voto cuenta la mitad."};
+  if(!navigator.geolocation){fail();return}
+  g.className="st"; g.textContent="Buscando tu ubicación…";
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const n=nearest([pos.coords.latitude,pos.coords.longitude]);
+    if(n.d<=NEAR_M){gpsOK=true;select(n.t.id);fillBeaches(n.t,n.name);g.className="st ok";g.textContent=`Estás en ${n.name} (${n.t.name}).`}
+    else{gpsOK=false;g.className="st";g.textContent=`La playa más cercana es ${n.name}, a ${n.d<10000?Math.round(n.d)+" m":Math.round(n.d/1000)+" km"}. Para votar con ubicación tenés que estar en la playa. Igual podés elegirla de la lista; tu voto cuenta la mitad.`}
+  },fail,{enableHighAccuracy:true,timeout:15000,maximumAge:60000});
+});
+$("f-beach").addEventListener("change",()=>{if(gpsOK){gpsOK=false;$("gps-st").className="st";$("gps-st").textContent="Cambiaste la playa a mano: tu voto cuenta la mitad."}});
+$("form").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const fd=new FormData(e.target), err=$("f-err"), send=$("f-send");
+  const v={tramo:st.sel,beach:$("f-beach").value,score:+fd.get("score"),water:fd.get("water"),jelly:fd.get("jelly"),clean:fd.get("clean"),algae:$("f-algae").checked,gps:gpsOK};
+  if(!v.score||!v.water||!v.jelly||!v.clean){err.textContent="Marcá el puntaje, cómo está el agua, si hay aguavivas y la limpieza.";err.hidden=false;return}
+  err.hidden=true; send.disabled=true; send.textContent="Enviando…";
+  try{await sendVote(v);$("formcard").hidden=true;await loadVotes();$("reports").scrollIntoView({behavior:"smooth",block:"start"})}
+  catch(x){err.textContent=x.message;err.hidden=false}
+  finally{send.disabled=false;send.textContent="Enviar puntaje"}
+});
+$("f-cancel").addEventListener("click",()=>{$("formcard").hidden=true});
+
+// ===== Eventos =====
+function select(id){st.sel=id;store("fdlp_tramo",id);render();if(!$("formcard").hidden&&!gpsOK)fillBeaches(TRAMOS.find(x=>x.id===id))}
+document.addEventListener("click",e=>{
+  const s=e.target.closest(".seg,.item"); if(s){select(+s.dataset.id);if(s.classList.contains("item"))$("card").scrollIntoView({behavior:"smooth",block:"center"});return}
+  const hb=e.target.closest("[data-h]"); if(hb){st.hour=+hb.dataset.h;render();return}
+  const dy=e.target.closest("[data-day]"); if(dy){const d=+dy.dataset.day;if(d!==st.day){st.day=d;st.hour=defaultSlot(d);if(d===1)$("formcard").hidden=true;render()}return}
+  if(e.target.id==="open-form"){openForm();return}
+  if(e.target.id==="wx-retry"){$("status").textContent="Cargando el clima…";loadWeather()}
+});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden){loadVotes();if(!wxAt||Date.now()-wxAt>30*60000)loadWeather()}});
+setInterval(()=>{if(!document.hidden)loadVotes()},2*60000);
+setInterval(()=>{if(!document.hidden)loadWeather()},30*60000);
+
+render(); loadWeather(); loadVotes();
+</script>
+</body>
+</html>
