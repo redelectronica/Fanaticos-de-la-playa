@@ -1,0 +1,17 @@
+{
+  "name": "Fanáticos de la Playa",
+  "short_name": "Playa",
+  "description": "Cómo está la playa hoy en Montevideo y la Costa de Oro: agua, viento, sol, aguavivas y el puntaje de los playeros.",
+  "lang": "es-UY",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef2f0",
+  "theme_color": "#1f6f78",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

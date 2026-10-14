@@ -7,6 +7,15 @@
 <meta name="description" content="Cómo está la playa hoy en Montevideo y la Costa de Oro: agua, viento, sol, aguavivas y el puntaje de los playeros.">
 <meta name="theme-color" content="#1f6f78">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 56'%3E%3Crect width='56' height='56' rx='14' fill='%23cfe6ef'/%3E%3Ccircle cx='37' cy='17' r='8' fill='%23f2b134'/%3E%3Cpath d='M0 40 Q7 37 14 40 T28 40 T42 40 T56 40 V56 H0 Z' fill='%233c7c92'/%3E%3Cpath d='M0 46 Q14 42 28 45 T56 44 V42 Q56 56 42 56 H14 Q0 56 0 42 Z' fill='%23e2cf9f'/%3E%3Cg transform='rotate(-14 22 30)'%3E%3Cline x1='22' y1='18' x2='22' y2='47' stroke='%234a3b2a' stroke-width='2.2'/%3E%3Cpath d='M6 31 Q22 6 38 31 Q34 28 30 31 Q26 28 22 31 Q18 28 14 31 Q10 28 6 31 Z' fill='%23d9573b'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Playa">
+<meta property="og:title" content="Fanáticos de la Playa">
+<meta property="og:description" content="¿Cómo está la playa hoy? Agua, viento, sol, aguavivas y el puntaje de los playeros en Montevideo y la Costa de Oro.">
+<meta property="og:image" content="https://redelectronica.github.io/Fanaticos-de-la-playa/icon-512.png">
+<meta property="og:url" content="https://redelectronica.github.io/Fanaticos-de-la-playa/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
@@ -121,6 +130,10 @@ select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var
 .item .n{font-weight:700}
 .item .w{font-size:.82rem;color:var(--muted)}
 .chip{font-family:var(--display);font-weight:900;font-stretch:80%;font-size:1.05rem;min-width:40px;text-align:center;border-radius:8px;padding:3px 6px;color:#fff;font-variant-numeric:tabular-nums;background:var(--muted)}
+.app{display:flex;flex-direction:column;gap:10px}
+.app p{margin:0}
+.app .row .btn{flex:1;min-width:140px}
+.iosnote{font-size:.88rem;background:var(--bg);border-radius:10px;padding:10px}
 .foot{font-size:.82rem;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
 .foot p{margin:0 0 6px}
 .foot a{color:var(--accent)}
@@ -198,6 +211,18 @@ select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var
   <section>
     <h2 style="margin-bottom:6px">Todos los tramos</h2>
     <div class="list" id="list"></div>
+  </section>
+
+  <section class="card app" id="appcard" aria-label="Llevala en tu celular">
+    <h2 class="pop">Llevala en tu celular</h2>
+    <p id="app-text">Instalala para tenerla con su ícono en la pantalla de inicio, y pasásela a tus amigos playeros.</p>
+    <div class="row">
+      <button class="btn solid" type="button" id="install-btn" hidden>Instalar la app</button>
+      <button class="btn" type="button" id="share-btn">Compartir con amigos</button>
+    </div>
+    <div class="iosnote" id="ios-note" hidden>En iPhone: tocá el botón <b>Compartir</b> de Safari (el cuadrado con la flecha para arriba) y elegí <b>Agregar a pantalla de inicio</b>.</div>
+    <div class="iosnote" id="android-note" hidden>Si no aparece el botón de instalar: abrí el menú de Chrome (los tres puntitos) y elegí <b>Instalar app</b> o <b>Agregar a la pantalla principal</b>.</div>
+    <div class="ok" id="share-ok" hidden></div>
   </section>
 
   <footer class="foot">
@@ -524,6 +549,26 @@ document.addEventListener("click",e=>{
 document.addEventListener("visibilitychange",()=>{if(!document.hidden){loadVotes();if(!wxAt||Date.now()-wxAt>30*60000)loadWeather()}});
 setInterval(()=>{if(!document.hidden)loadVotes()},2*60000);
 setInterval(()=>{if(!document.hidden)loadWeather()},30*60000);
+
+// ===== Instalar y compartir =====
+const SITE="https://redelectronica.github.io/Fanaticos-de-la-playa/";
+const SHARE_TEXT="¿Cómo está la playa hoy? Mirá el agua, el viento, el sol y las aguavivas en Montevideo y la Costa de Oro, y puntuá tu playa:";
+const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+let installEvt=null;
+if(standalone){$("app-text").textContent="Ya la tenés instalada. Pasásela a tus amigos playeros así la playa tiene más votos.";}
+else if(isIOS){$("ios-note").hidden=false}
+else{setTimeout(()=>{if(!installEvt)$("android-note").hidden=false},3000)}
+addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvt=e;$("install-btn").hidden=false;$("android-note").hidden=true});
+addEventListener("appinstalled",()=>{$("install-btn").hidden=true;$("app-text").textContent="¡Listo! Ya la tenés en la pantalla de inicio."});
+$("install-btn").addEventListener("click",async()=>{if(!installEvt)return;installEvt.prompt();try{await installEvt.userChoice}catch(e){}installEvt=null;$("install-btn").hidden=true});
+$("share-btn").addEventListener("click",async()=>{
+  const ok=$("share-ok");
+  if(navigator.share){try{await navigator.share({title:"Fanáticos de la Playa",text:SHARE_TEXT,url:SITE});return}catch(e){if(e.name==="AbortError")return}}
+  try{await navigator.clipboard.writeText(SHARE_TEXT+" "+SITE);ok.textContent="Copié el enlace. Pegalo en WhatsApp o donde quieras.";ok.hidden=false}
+  catch(e){ok.textContent=SITE;ok.hidden=false}
+});
+if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
 
 render(); loadWeather(); loadVotes();
 </script>
