@@ -225,6 +225,12 @@ select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var
     <div class="ok" id="share-ok" hidden></div>
   </section>
 
+  <section class="card app" id="coffee" aria-label="Invitame un café" hidden>
+    <h2 class="pop">Invitame un café</h2>
+    <p>Fanáticos de la Playa es gratis y sin publicidad. Si te sirve, podés invitarme un café ($200) para ayudar a mantenerla y sumar más playas.</p>
+    <div class="row"><a class="btn solid" id="coffee-btn" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">☕ Invitame un café</a></div>
+  </section>
+
   <footer class="foot">
     <p>El color y la salinidad del agua son una estimación: la costa pasa de río (marrón, dulce) a océano (más clara y salada) de oeste a este, y el viento del este y sureste empuja agua salada hacia adentro. Cuando los playeros votan, manda lo que ven ellos. No reemplaza los análisis de las intendencias ni la bandera de los guardavidas.</p>
     <p>Privacidad: los votos son anónimos y se borran a los 2 días. La ubicación se usa solo en tu celular para saber en qué playa estás; no se guardan tus coordenadas.</p>
@@ -236,6 +242,7 @@ select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var
 // ===== Configuración =====
 const SUPABASE_URL = "https://sgilsmuazyphvclxdeoi.supabase.co";
 const SUPABASE_KEY = "sb_publishable_W69j7lDdPAaizqlz0RSctg_bjth2Jzk"; // clave pública
+const CAFE_URL = "https://mpago.la/26acbGc"; // link de pago de Mercado Pago para "Invitame un café"
 
 // ===== Playas: coordenadas aproximadas [lat, lon] =====
 const TRAMOS=[
@@ -568,6 +575,7 @@ $("share-btn").addEventListener("click",async()=>{
   try{await navigator.clipboard.writeText(SHARE_TEXT+" "+SITE);ok.textContent="Copié el enlace. Pegalo en WhatsApp o donde quieras.";ok.hidden=false}
   catch(e){ok.textContent=SITE;ok.hidden=false}
 });
+if(/^https:\/\//.test(CAFE_URL)){$("coffee-btn").href=CAFE_URL;$("coffee").hidden=false}
 if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
 
 render(); loadWeather(); loadVotes();
