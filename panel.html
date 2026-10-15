@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es-UY">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Panel · Fanáticos de la Playa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+:root{
+  --bg:#eef2f0; --card:#ffffff; --ink:#1b2a2d; --muted:#5a6a6d; --line:#d3dbd8; --grid:#e6ecea;
+  --accent:#1f6f78; --accent-ink:#ffffff; --pop:#d4147c; --bad:#c2452d;
+  --display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0f1719; --card:#162226; --ink:#e4ecea; --muted:#94a5a7; --line:#28383c; --grid:#1f2e32;
+  --accent:#5fb3bb; --accent-ink:#0f1719; --pop:#ff5cb0; --bad:#ec7a62; color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;margin:0}
+.wrap{max-width:640px;margin:0 auto;padding-inline:16px;padding-block:20px 40px;display:flex;flex-direction:column;gap:18px}
+h1{font-family:var(--display);font-weight:900;font-stretch:72%;font-size:2rem;line-height:1;margin:0}
+h2{font-family:var(--display);font-weight:800;font-stretch:85%;font-size:1rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0}
+.pop{color:var(--pop)}
+.sub{color:var(--muted);font-size:.9rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+form{display:flex;gap:8px;flex-wrap:wrap}
+input{font:inherit;flex:1;min-width:180px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
+.btn{font:inherit;font-weight:700;border:1px solid var(--accent);color:var(--accent-ink);background:var(--accent);border-radius:8px;padding:10px 16px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.err{color:var(--bad);font-weight:700}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media (max-width:460px){.tiles{grid-template-columns:repeat(2,1fr)}}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tile .n{font-family:var(--display);font-weight:900;font-stretch:80%;font-size:2rem;line-height:1.05;font-variant-numeric:tabular-nums}
+.tile .l{font-size:.82rem;color:var(--muted)}
+.tile.hero{grid-column:1/-1;flex-direction:row;align-items:baseline;gap:12px}
+.tile.hero .n{font-size:3rem;color:var(--accent)}
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:auto}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);border-radius:8px;padding:6px 10px;font-size:.82rem;white-space:nowrap;transform:translate(-50%,-100%);font-variant-numeric:tabular-nums}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:.9rem}
+th,td{text-align:right;padding:6px 4px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font-weight:700;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em}
+.note{font-size:.85rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Panel de <span class="pop">visitas</span></h1>
+    <div class="sub">Fanáticos de la Playa · solo para vos</div>
+  </header>
+
+  <section class="card" id="login">
+    <h2>Entrar</h2>
+    <form id="form">
+      <input type="password" id="clave" placeholder="Tu clave del panel" autocomplete="current-password" aria-label="Clave del panel">
+      <button class="btn" type="submit">Ver números</button>
+    </form>
+    <div class="err" id="err" hidden></div>
+  </section>
+
+  <div id="data" hidden>
+    <div class="tiles" id="tiles"></div>
+  </div>
+
+  <section class="card" id="chartcard" hidden>
+    <h2>Personas por día · últimos 30 días</h2>
+    <div class="chart" id="chart"></div>
+    <div class="note">Tocá o pasá el dedo por una barra para ver el detalle del día.</div>
+  </section>
+
+  <section class="card" id="tablecard" hidden>
+    <h2>Últimos 7 días</h2>
+    <table><thead><tr><th>Día</th><th>Personas</th><th>Nuevas</th><th>Visitas</th></tr></thead><tbody id="tbody"></tbody></table>
+    <div class="note"><b>Personas:</b> celulares distintos. <b>Nuevas:</b> entraron por primera vez ese día. <b>Visitas:</b> veces que abrieron la app (si alguien la abre varias veces en media hora, cuenta una sola).</div>
+  </section>
+
+  <div class="row" id="actions" hidden style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn ghost" type="button" id="reload">Actualizar</button>
+    <button class="btn ghost" type="button" id="logout">Salir</button>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://sgilsmuazyphvclxdeoi.supabase.co";
+const SUPABASE_KEY = "sb_publishable_W69j7lDdPAaizqlz0RSctg_bjth2Jzk";
+const $ = id => document.getElementById(id);
+const fmtN = n => Number(n).toLocaleString("es-UY");
+const DIAS = ["dom","lun","mar","mié","jue","vie","sáb"];
+const fecha = s => { const [y,m,d] = s.split("-").map(Number); const dt = new Date(y, m-1, d); return `${DIAS[dt.getDay()]} ${d}/${m}`; };
+function store(k,v){try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){return null}}
+
+async function cargar(clave){
+  const h = {apikey:SUPABASE_KEY,"Content-Type":"application/json"};
+  if(!SUPABASE_KEY.startsWith("sb_")) h.Authorization = "Bearer " + SUPABASE_KEY;
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/estadisticas`,{method:"POST",headers:h,body:JSON.stringify({p_clave:clave})});
+  if(!r.ok){ let m=""; try{m=(await r.json()).message||""}catch(e){} throw new Error(/Clave/.test(m)?"Clave incorrecta.":"No se pudieron cargar los números. Probá de nuevo en un rato."); }
+  return r.json();
+}
+
+function tile(n,l,cls=""){return `<div class="tile ${cls}"><span class="n">${fmtN(n)}</span><span class="l">${l}</span></div>`}
+
+function mostrar(d){
+  $("tiles").innerHTML =
+    tile(d.hoy_personas,"personas entraron hoy","hero") +
+    tile(d.hoy_visitas,"visitas hoy") +
+    tile(d.semana_personas,"personas en 7 días") +
+    tile(d.mes_personas,"personas en 30 días") +
+    tile(d.total_personas,"personas desde el inicio") +
+    tile(d.instalada_personas,"la usan instalada (30 días)") +
+    tile(d.votos_48h,"votos en las últimas 48 h");
+  dibujar(d.por_dia || []);
+  $("tbody").innerHTML = (d.por_dia||[]).slice(-7).reverse().map(x=>`<tr><td>${fecha(x.dia)}</td><td>${fmtN(x.personas)}</td><td>${fmtN(x.nuevas)}</td><td>${fmtN(x.visitas)}</td></tr>`).join("");
+  ["data","chartcard","tablecard","actions"].forEach(id=>$(id).hidden=false);
+  $("login").hidden = true;
+}
+
+// Barras de personas por día: una serie, eje desde cero, etiquetas cada 7 días
+function dibujar(rows){
+  const W=360,H=200,L=26,R=6,T=10,B=24, iw=W-L-R, ih=H-T-B;
+  const max=Math.max(1,...rows.map(r=>r.personas));
+  const step=max<=5?1:max<=10?2:Math.ceil(max/5/5)*5;
+  const top=Math.ceil(max/step)*step;
+  const y=v=>T+ih-(v/top)*ih, bw=iw/rows.length;
+  let g="";
+  for(let v=0;v<=top;v+=step){g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)" stroke-width="1"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="10" fill="var(--muted)">${v}</text>`}
+  let bars="", labels="", hits="";
+  rows.forEach((r,i)=>{
+    const x=L+i*bw+1, w=Math.max(2,bw-2), h=Math.max(0,y(0)-y(r.personas));
+    if(h>0){const rr=Math.min(4,w/2,h);bars+=`<path d="M${x},${y(0)} V${y(0)-h+rr} Q${x},${y(0)-h} ${x+rr},${y(0)-h} H${x+w-rr} Q${x+w},${y(0)-h} ${x+w},${y(0)-h+rr} V${y(0)} Z" fill="var(--accent)"/>`}
+    if((rows.length-1-i)%7===0){const last=i===rows.length-1, first=i<3;labels+=`<text x="${last?W-R:first?L:x+w/2}" y="${H-6}" text-anchor="${last?"end":first?"start":"middle"}" font-size="10" fill="var(--muted)">${fecha(r.dia)}</text>`}
+    hits+=`<rect x="${L+i*bw}" y="${T}" width="${bw}" height="${ih}" fill="transparent" data-i="${i}"/>`;
+  });
+  $("chart").innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Personas por día en los últimos 30 días">${g}<line x1="${L}" x2="${W-R}" y1="${y(0)}" y2="${y(0)}" stroke="var(--line)"/>${bars}${labels}${hits}</svg><div class="tip" id="tip" hidden></div>`;
+  const svg=$("chart").querySelector("svg"), tip=$("tip");
+  const show=e=>{const t=e.target.closest("[data-i]");if(!t){tip.hidden=true;return}
+    const r=rows[+t.dataset.i], box=svg.getBoundingClientRect(), k=box.width/W;
+    tip.innerHTML=`<b>${fecha(r.dia)}</b> · ${fmtN(r.personas)} personas · ${fmtN(r.nuevas)} nuevas · ${fmtN(r.visitas)} visitas`;
+    tip.hidden=false; const cx=(L+(+t.dataset.i+.5)*bw)*k;
+    tip.style.left=Math.min(Math.max(cx,120),box.width-120)+"px"; tip.style.top=(y(r.personas)*k-6)+"px";};
+  svg.addEventListener("pointermove",show); svg.addEventListener("pointerdown",show);
+  svg.addEventListener("pointerleave",()=>tip.hidden=true);
+}
+
+async function entrar(clave){
+  $("err").hidden=true;
+  try{ const d=await cargar(clave); store("fdlp_panel",clave); mostrar(d); }
+  catch(e){ $("err").textContent=e.message; $("err").hidden=false; $("login").hidden=false; store("fdlp_panel",null); }
+}
+$("form").addEventListener("submit",e=>{e.preventDefault(); const c=$("clave").value.trim(); if(c)entrar(c);});
+$("reload").addEventListener("click",()=>{const c=store("fdlp_panel"); if(c)entrar(c);});
+$("logout").addEventListener("click",()=>{store("fdlp_panel",null); location.reload();});
+const guardada=store("fdlp_panel"); if(guardada)entrar(guardada);
+</script>
+</body>
+</html>

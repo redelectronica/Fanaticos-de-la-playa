@@ -248,7 +248,7 @@ select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var
   <footer class="foot">
     <p>El color y la salinidad del agua son una estimación: la costa pasa de río (marrón, dulce) a océano (más clara y salada) de oeste a este, y el viento del este y sureste empuja agua salada hacia adentro. Cuando los playeros votan, manda lo que ven ellos. No reemplaza los análisis de las intendencias ni la bandera de los guardavidas.</p>
     <p>Antes de bañarte, fijate si la base de guardavidas tiene la bandera sanitaria (roja con cruz verde) y revisá el estado oficial: <a href="https://montevideo.gub.uy/playas" target="_blank" rel="noopener">playas de Montevideo</a> · <a href="https://www.imcanelones.gub.uy/" target="_blank" rel="noopener">Intendencia de Canelones</a>.</p>
-    <p>Privacidad: los votos son anónimos y se borran a los 2 días. La ubicación se usa solo en tu celular para saber en qué playa estás; no se guardan tus coordenadas.</p>
+    <p>Privacidad: los votos son anónimos y se borran a los 2 días. Las visitas se cuentan de forma anónima, sin nombres ni datos personales. La ubicación se usa solo en tu celular para saber en qué playa estás; no se guardan tus coordenadas.</p>
     <p>Datos del clima: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a></p>
   </footer>
 </div>
@@ -632,6 +632,14 @@ $("share-btn").addEventListener("click",async()=>{
   try{await navigator.clipboard.writeText(SHARE_TEXT+" "+SITE);ok.textContent="Copié el enlace. Pegalo en WhatsApp o donde quieras.";ok.hidden=false}
   catch(e){ok.textContent=SITE;ok.hidden=false}
 });
+// ===== Contador de visitas anónimo (una vez por apertura; el servidor ignora repeticiones en 30 min) =====
+(function contarVisita(){
+  if(!ONLINE)return;
+  try{if(sessionStorage.getItem("fdlp_visita"))return;sessionStorage.setItem("fdlp_visita","1")}catch(e){}
+  fetch(`${SUPABASE_URL}/rest/v1/visitas`,{method:"POST",
+    headers:sbHeaders({"Content-Type":"application/json",Prefer:"return=minimal"}),
+    body:JSON.stringify({visitante:votanteId(),instalada:standalone})}).catch(()=>{});
+})();
 if(/^https:\/\//.test(CAFE_URL)){$("coffee-btn").href=CAFE_URL;$("coffee").hidden=false}
 if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
 
